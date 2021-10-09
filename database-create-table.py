@@ -50,26 +50,6 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS showtimes(
 #cursor.execute("""INSERT INTO admin_password(hashed_password) VALUES ({})""".format(password))
 #connection.commit()
 
-# Set up theatres
-#cursor.execute("""INSERT INTO theatres (theatre_name, theatre_capacity) VALUES 
-                                                                                                #('Mann Theatre', 80), 
-                                                                                                #('The Academy', 120), 
-                                                                                                #('Green Fern Theatre', 100)""")
-#connection.commit()
-
-#cursor.execute("""INSERT INTO movies (movie_name) VALUES 
-                                                                                                #('Kill Bill'), 
-                                                                                                #('Cars'), 
-                                                                                                #('Wolf of Wall Street')""")
-#connection.commit()
-
-#cursor.execute("""INSERT INTO showtimes (movie_id, theatre_id, showtime_showtime, showtime_price, showtime_seats_left) VALUES 
-                                                                                                #(1, 1, '2021-11-01 10:00:00',10, 80), 
-                                                                                                #(1, 2, '2021-11-01 12:00:00', 20,120), 
-                                                                                                #(3, 2, '2021-11-02 17:30:00', 15,100)""")
-#connection.commit()
-
-
 
 def get_valid_option(message, option_max_value):
     '''Get a valid option from an option selection i.e. get an integer in the range of options'''
@@ -356,7 +336,6 @@ def delete_movie():
     cursor = connection.execute("SELECT showtime_id FROM showtimes WHERE movie_id={}".format(movie_id))
     number_showtimes_affected = len(cursor.fetchall())
     
-    
     confirmation = get_valid_option("Confirm deletion of {}. This will also remove {} showtimes. (1=YES, 2=NO): ".format(movie_name, number_showtimes_affected), 2)
     if confirmation==1:
         
@@ -371,6 +350,32 @@ def delete_movie():
     connection.commit()
 
     
+def delete_showtime():
+    '''Delete showtime from database'''
+    
+    print("\nDelete showtime. Please select showtime to delete:")
+    
+    # Display showtimes
+    
+    # Get all showtimes, wiht movie and theatre names from foreign ids
+    cursor = connection.execute("""SELECT showtimes.showtime_id, movies.movie_name, theatres.theatre_name, showtimes.showtime_showtime, showtimes.showtime_price, showtimes.showtime_seats_left 
+                                   FROM showtimes 
+                                      JOIN movies ON showtimes.movie_id=movies.movie_id
+                                      JOIN theatres ON showtimes.theatre_id=theatres.theatre_id""")
+    showtimes = cursor.fetchall()
+    i=1
+    for showtime in showtimes:
+        print("   {0}) Movie: {1} | Theatre: {2} | Time: {3} | Price: ${4} | Seats left: {5}".format(i,showtime[1],showtime[2],showtime[3],showtime[4],showtime[5]))
+        i+=1
+
+    # First, get placement of movie in list
+    showtime_number = get_valid_option("Enter showtime (number): ", i-1)
+    showtime_id = showtimes[showtime_number-1][0]
+    
+    connection.execute("DELETE FROM showtimes WHERE showtime_id={}".format(showtime_id))
+    connection.commit()
+    
+    print("Showtime deleted.")
     
 
 
@@ -395,7 +400,7 @@ def admin():
         elif option_selected == 3:
             delete_movie()
         elif option_selected == 4:
-            delete_showtime
+            delete_showtime()
         else:
             admin=False
     
