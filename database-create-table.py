@@ -6,6 +6,7 @@ import  sqlite3
 # Database for project
 DATABASE = 'ticketsrus.db'
 NUMBER_MAIN_MENU_OPTIONS = 3
+NUMBER_ADMIN_MENU_OPTIONS = 5
 
 # Connect to database
 connection = sqlite3.connect(DATABASE)
@@ -41,6 +42,11 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS showtimes(
                             FOREIGN KEY(movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE,
                             FOREIGN KEY(theatre_id) REFERENCES theatres(theatre_id) ON DELETE CASCADE
                         )""")
+
+#cursor.execute("""CREATE TABLE IF NOT EXISTS admin_password(hashed_password TEXT NOT NULL)""")
+#password=bcrypt.hashpw('1234', bcrypt.gensalt())
+#cursor.execute("""INSERT INTO admin_password(hashed_password) VALUES ({})""".format(password))
+#connection.commit()
 
 # Set up theatres
 #cursor.execute("""INSERT INTO theatres (theatre_name, theatre_capacity) VALUES 
@@ -196,19 +202,148 @@ def make_booking():
         print("Booking cancelled.\n")
         
 
+def add_movie():
+    '''Add movie to database'''
+    
+    print("\nAdd movie.")
+    movie_name_invalid = True
+    
+    while movie_name_invalid:
+        movie_name = input("Please enter movie name: ")
+        # Make sure user entered valid input
+        if movie_name!='':
+            # SQL will fail if name already exists. Thus, use try/except to catch this
+            try:
+                cursor.execute("INSERT INTO movies (movie_name) VALUES ('{}')".format(movie_name))
+                movie_name_invalid = False
+            except:
+                print("ERROR: Movie with this name already exists")
+        else:
+            print("ERROR: Please enter a valid movie name")
+            
+    connection.commit()
+    print("Movie successfully added")
+                
+    
+def add_showtime():
+    '''Add a showtime for movie'''
+    
+    
+    print("\nAdd showtime. Please select movie for this showtime:")
 
+    # ---
+    # Get movie
+    # --- 
 
+    cursor = connection.execute("SELECT movie_id, movie_name FROM movies")
+    movies = cursor.fetchall()
 
+    i=1
+    # Print movies
+    for movie in movies:
+        print("   {0}) {1}".format(i,movie[1]))
+        i+=1
 
+    # First, get placement of movie in list
+    movie_number = get_valid_option("Enter movie (number): ", i)
+    # Get movie id from this
+    movie_id = movies[movie_number-1][0]
+
+    # ---
+    # Get theatre
+    # ---
+
+    print("Movie selected. Please select a theatre for this showtime: ")
+
+    #get theatres that show this movie
+    cursor = connection.execute("SELECT theatres.theatre_id, theatres.theatre_name FROM theatres")
+    theatres = cursor.fetchall()
+
+    i=1
+    # Print theatres
+    for theatre in theatres:
+        print("   {0}) {1}".format(i,theatre[1]))
+        i+=1
+
+    # First, get placement of theatre in list
+    theatre_number = get_valid_option("Enter theatre (number): ", i)
+    # Get theatre id from this
+    theatre_id = theatres[theatre_number-1][0] 
+    
+    # ---
+    # Get Price
+    # ---
+    
+    price_invalid = True
+    while price_invalid:
+        try:
+            price = int(input("Please enter price for this showtime: "))
+    
+            #checks if input is within range of valid options, and returns input if it is
+            if price > 0:
+                price_invalid = False
+            else:
+                print("ERROR: Input invalid.")
+        #if number not inserted
+        except:
+            print("ERROR: Input invalid.")
+            
+    # ---
+    # Get time
+    # ---
+    
+    showtime = input("Please enter showtime in yyyy-mm-dd hh:mm:ss format: ")
+    
+    
+    print("Confirm booking for: \n   Movie: " + movies[movie_number-1][1] +
+                               "\n   Theatre: " + theatres[theatre_number-1][1] +
+                               "\n   Price: $" + str(price) +
+                               "\n   Showtime: " + showtime)   
+    
+    confirmation = get_valid_option("Confirm addition of showtime (1=YES, 2=NO): ", 2)
+    if confirmation==1:
+        
+        cursor = connection.execute("SELECT theatres.theatre_capacity FROM theatres WHERE theatres.theatre_id={}".format(theatres[theatre_number-1][0]))
+        seats = cursor.fetchall()[0][0]
+        
+        # Insert showtime into database
+        cursor.execute("""INSERT INTO showtimes (movie_id, theatre_id, showtime_showtime, showtime_price, showtime_seats_left)
+                          VALUES ({0}, {1}, '{2}', {3}, {4})""".format(movies[movie_number-1][0], theatres[theatre_number-1][0], showtime, price, seats))
+
+    else:
+        print("Showtime addition cancelled.\n")  
+        return
+            
+    connection.commit()
+    print("Showtime successfully added") 
 
 
 
 def admin():
-    print("Options: \n   1) Add movie" +
-                   "\n   2) Add showtime" +
-                   "\n   3) Delete movie" +
-                   "\n   4) Delete showtime" +
-                   "\n   5) Exit admin")
+    
+    admin=True
+    
+    while(admin):
+    
+        print("\nAdmin section accessed.")
+        print("Options: \n   1) Add movie" +
+                       "\n   2) Add showtime" +
+                       "\n   3) Delete movie" +
+                       "\n   4) Delete showtime" +
+                       "\n   5) Exit admin")
+        option_selected = get_valid_option("Enter option (number): ", NUMBER_ADMIN_MENU_OPTIONS)
+        
+        if option_selected == 1:
+            add_movie()
+        elif option_selected == 2:
+            add_showtime()
+        elif option_selected == 3:
+            delete_movie()
+        elif option_selected == 4:
+            delete_showtime
+        else:
+            admin=False
+    
     
 
 program_running = True
