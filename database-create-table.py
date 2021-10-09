@@ -1,6 +1,8 @@
 
 # Import the sqlite3 library
-import  sqlite3
+import sqlite3
+# Used to validate datetimes when inserting
+import datetime
 
 
 # Database for project
@@ -110,7 +112,7 @@ def make_booking():
         i+=1
 
     # First, get placement of movie in list
-    movie_number = get_valid_option("Enter movie (number): ", i)
+    movie_number = get_valid_option("Enter movie (number): ", i-1)
     # Get movie id from this
     movie_id = movies[movie_number-1][0]
 
@@ -138,7 +140,7 @@ def make_booking():
         return
 
     # First, get placement of movie in list
-    theatre_number = get_valid_option("Enter theatre (number): ", i)
+    theatre_number = get_valid_option("Enter theatre (number): ", i-1)
     # Get theatre id from this
     theatre_id = theatres[theatre_number-1][0]
 
@@ -161,7 +163,7 @@ def make_booking():
         i+=1
 
     # First, get placement of movie in list
-    showtime_number = get_valid_option("Enter showtime (number): ", i)
+    showtime_number = get_valid_option("Enter showtime (number): ", i-1)
 
     # --- 
     # Get number of seats
@@ -245,7 +247,7 @@ def add_showtime():
         i+=1
 
     # First, get placement of movie in list
-    movie_number = get_valid_option("Enter movie (number): ", i)
+    movie_number = get_valid_option("Enter movie (number): ", i-1)
     # Get movie id from this
     movie_id = movies[movie_number-1][0]
 
@@ -266,7 +268,7 @@ def add_showtime():
         i+=1
 
     # First, get placement of theatre in list
-    theatre_number = get_valid_option("Enter theatre (number): ", i)
+    theatre_number = get_valid_option("Enter theatre (number): ", i-1)
     # Get theatre id from this
     theatre_id = theatres[theatre_number-1][0] 
     
@@ -292,17 +294,32 @@ def add_showtime():
     # Get time
     # ---
     
-    showtime = input("Please enter showtime in yyyy-mm-dd hh:mm:ss format: ")
+    showtime_invalid = True
+    while showtime_invalid:
+        showtime = input("Please enter showtime in YYYY-MM-DD HH:MM format: ")
+        try:
+            # Check that date inputted in correct format
+            if showtime != datetime.datetime.strptime(showtime, "%Y-%m-%d %H:%M").strftime('%Y-%m-%d %H:%M'):
+                print("ERROR: Invalid input.")
+            else:
+                # Check that showtime is after current time
+                if datetime.datetime.strptime(showtime, "%Y-%m-%d %H:%M") > datetime.datetime.now():
+                    showtime_invalid = False
+                else:
+                    print("ERROR: Invalid input.")
+        except ValueError:
+            print("ERROR: Invalid input.")        
     
     
-    print("Confirm booking for: \n   Movie: " + movies[movie_number-1][1] +
-                               "\n   Theatre: " + theatres[theatre_number-1][1] +
-                               "\n   Price: $" + str(price) +
-                               "\n   Showtime: " + showtime)   
+    print("Confirm addition of showtime for: \n   Movie: " + movies[movie_number-1][1] +
+                                            "\n   Theatre: " + theatres[theatre_number-1][1] +
+                                            "\n   Price: $" + str(price) +
+                                            "\n   Showtime: " + showtime)   
     
     confirmation = get_valid_option("Confirm addition of showtime (1=YES, 2=NO): ", 2)
     if confirmation==1:
         
+        # Get number of seats by theatre
         cursor = connection.execute("SELECT theatres.theatre_capacity FROM theatres WHERE theatres.theatre_id={}".format(theatres[theatre_number-1][0]))
         seats = cursor.fetchall()[0][0]
         
@@ -317,6 +334,46 @@ def add_showtime():
     connection.commit()
     print("Showtime successfully added") 
 
+
+def delete_movie():
+    '''Delete movie from database'''
+    
+    print("\nDelete movie. Please select a movie to delete: ")
+    
+    cursor = connection.execute("SELECT movie_id, movie_name FROM movies")
+    movies = cursor.fetchall()
+    # Used to keep track of number of movies, and refer to id by index in below list
+    i=1
+    # Print movies
+    for movie in movies:
+        print("   {0}) {1}".format(i,movie[1]))
+        i+=1
+
+    # First, get placement of movie in list
+    movie_number = get_valid_option("Enter movie (number): ", i-1)
+    # Get movie id from this
+    movie_id = movies[movie_number-1][0]
+    
+    confirmation = get_valid_option("Confirm deletion of {}. This will also remove {} showtimes. (1=YES, 2=NO): ", 2)
+    if confirmation==1:
+        
+        # Get number of seats by theatre
+        cursor = connection.execute("SELECT theatres.theatre_capacity FROM theatres WHERE theatres.theatre_id={}".format(theatres[theatre_number-1][0]))
+        seats = cursor.fetchall()[0][0]
+        
+        # Insert showtime into database
+        cursor.execute("""INSERT INTO showtimes (movie_id, theatre_id, showtime_showtime, showtime_price, showtime_seats_left)
+                          VALUES ({0}, {1}, '{2}', {3}, {4})""".format(movies[movie_number-1][0], theatres[theatre_number-1][0], showtime, price, seats))
+
+    else:
+        print("Showtime addition cancelled.\n")  
+        return    
+    
+    print("{} deleted. This has also removed 
+    connection.execute("DELETE FROM movies WHERE movie_id={}".format(movie_id))
+
+    
+    
 
 
 def admin():
