@@ -3,6 +3,9 @@
 import sqlite3
 # Used to validate datetimes when inserting
 import datetime
+#hashing
+import hashlib
+
 
 
 # Database for project
@@ -12,7 +15,6 @@ NUMBER_ADMIN_MENU_OPTIONS = 5
 
 # Connect to database
 connection = sqlite3.connect(DATABASE)
-
 cursor = connection.cursor()
 
 # Foregin key functoinality disabled by default. This turns them on
@@ -21,31 +23,9 @@ connection.execute("PRAGMA foreign_keys = ON")
 
 # Create tables for tickets r us database
 
-# Movies table
-cursor.execute("""CREATE TABLE IF NOT EXISTS movies(
-                        movie_id INTEGER PRIMARY KEY,
-                        movie_name TEXT UNIQUE NOT NULL
-                        )""")
 
-# Theatres table                     
-cursor.execute("""CREATE TABLE IF NOT EXISTS theatres(
-                        theatre_id INTEGER PRIMARY KEY,
-                        theatre_name TEXT UNIQUE NOT NULL,
-                        theatre_capacity INTEGER NOT NULL
-                        )""")
-
-# Showtimes joining table
-cursor.execute("""CREATE TABLE IF NOT EXISTS showtimes(
-                        showtime_id INTEGER PRIMARY KEY,
-                        showtime_showtime DATETIME NOT NULL,
-                        showtime_price INTEGER NOT NULL,
-                        movie_id INTEGER NOT NULL,
-                        theatre_id INTEGER NOT NULL,
-                            FOREIGN KEY(movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE,
-                            FOREIGN KEY(theatre_id) REFERENCES theatres(theatre_id) ON DELETE CASCADE
-                        )""")
-
-#cursor.execute("""CREATE TABLE IF NOT EXISTS admin_password(hashed_password TEXT NOT NULL)""")
+cursor.execute("""CREATE TABLE IF NOT EXISTS admin_password(hashed_password TEXT NOT NULL)""")
+connection.commit()
 #password=bcrypt.hashpw('1234', bcrypt.gensalt())
 #cursor.execute("""INSERT INTO admin_password(hashed_password) VALUES ({})""".format(password))
 #connection.commit()
@@ -90,11 +70,16 @@ def make_booking():
     for movie in movies:
         print("   {0}) {1}".format(i,movie[1]))
         i+=1
+    print("   {}) CANCEL BOOKING".format(i))
 
     # First, get placement of movie in list
-    movie_number = get_valid_option("Enter movie (number): ", i-1)
+    movie_number = get_valid_option("Enter movie (number): ", i)
     # Get movie id from this
-    movie_id = movies[movie_number-1][0]
+    if movie_number == i:
+        print("Booking cancelled.\n")
+        return
+    else:
+        movie_id = movies[movie_number-1][0]
 
     # ---
     # Get theatre
@@ -118,11 +103,17 @@ def make_booking():
     if i==1:
         print("Sorry! This movie is not showing at any theatres. Booking automatically cancelled.\n")
         return
+    
+    print("   {}) CANCEL BOOKING".format(i))
 
     # First, get placement of movie in list
-    theatre_number = get_valid_option("Enter theatre (number): ", i-1)
+    theatre_number = get_valid_option("Enter theatre (number): ", i)
     # Get theatre id from this
-    theatre_id = theatres[theatre_number-1][0]
+    if theatre_number == i:
+        print("Booking cancelled.\n")
+        return  
+    else:
+        theatre_id = theatres[theatre_number-1][0]
 
     # ---
     # Get showtime
@@ -141,15 +132,20 @@ def make_booking():
     for showtime in showtimes:
         print("   {0}) Time: {1} | Price: ${2} | Seats left: {3}".format(i,showtime[1],showtime[2],showtime[3]))
         i+=1
+    print("   {}) CANCEL BOOKING".format(i))
 
     # First, get placement of movie in list
-    showtime_number = get_valid_option("Enter showtime (number): ", i-1)
+    showtime_number = get_valid_option("Enter showtime (number): ", i)
+    
+    if showtime_number == i:
+        print("Booking cancelled.\n")
+        return     
 
     # --- 
     # Get number of seats
     # ---
 
-    print("Please select number of seats required (number): ")
+    print("Please select number of seats required (e.g. '4') OR enter '0' to cancel: ")
     number_seats_invalid=True
     while number_seats_invalid:
 
@@ -158,7 +154,10 @@ def make_booking():
             number_seats = int(input("Number of seats: "))
             if number_seats>showtime[3]:
                 print("Sorry! There are not that many seats left")
-            elif number_seats<=0:
+            elif number_seats==0:
+                print("Booking cancelled.\n")
+                return
+            elif number_seats<0:
                 print("ERROR: Input invalid")
             else:
                 new_seats_left = showtime[3]-number_seats
@@ -381,6 +380,23 @@ def delete_showtime():
 
 def admin():
     
+    print("\nAccessing admin section. ")
+    
+    loggedOut=True
+    
+    hashed_pass = connection.execute("SELECT hashed_password FROM admin_password")
+    hashed_pass = hashed_pass.fetchall()[1][0]    
+    
+    while loggedOut:
+        password = input("Please enter password: ")
+        
+        hashed_user_pass = hashlib.sha256(password.encode())
+        if( hashed_user_pass.hexdigest()==hashed_pass):
+            loggedOut = False
+        else:
+            print("Incorrect password. Please try again.")
+            
+            
     admin=True
     
     while(admin):
@@ -415,7 +431,7 @@ while program_running:
 
     #Get inputted option
     option_selected = get_valid_option("Enter option (number): ", NUMBER_MAIN_MENU_OPTIONS)
-
+    
     #Calls appropiate function based on input
     if option_selected == 1:
         make_booking()
