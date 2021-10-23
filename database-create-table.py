@@ -385,7 +385,7 @@ def admin():
     loggedOut=True
     
     hashed_pass = connection.execute("SELECT hashed_password FROM admin_password")
-    hashed_pass = hashed_pass.fetchall()[1][0]    
+    hashed_pass = hashed_pass.fetchall()[0][0]    
     
     while loggedOut:
         password = input("Please enter password: ")
