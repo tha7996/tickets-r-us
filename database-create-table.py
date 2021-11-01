@@ -380,23 +380,30 @@ def delete_showtime():
 
 def admin():
     
-    print("\nAccessing admin section. ")
+    print("\nAccessing admin section. ")  
     
     loggedOut=True
-    
-    hashed_pass = connection.execute("SELECT hashed_password FROM admin_password")
-    hashed_pass = hashed_pass.fetchall()[0][0]    
+      
     
     while loggedOut:
-        password = input("Please enter password: ")
+        user = input("Please enter username: ")
         
-        hashed_user_pass = hashlib.sha256(password.encode())
-        if( hashed_user_pass.hexdigest()==hashed_pass):
-            loggedOut = False
-        else:
-            print("Incorrect password. Please try again.")
+        try:
+
+            hashed_pass = connection.execute("SELECT hashed_password FROM users WHERE username='{}'".format(user))
+            hashed_pass = hashed_pass.fetchall()[0][0]     
+            password = input("Please enter password: ")    
             
-            
+            hashed_user_pass = hashlib.sha256(password.encode())
+            if hashed_user_pass.hexdigest()==hashed_pass:
+                loggedOut = False
+            else:
+                print("Invalid credentials. Please try again.")
+        
+        except:      
+            password = input("Please enter password: ")
+            print("Invalid credentials. Please try again.")
+                
     admin=True
     
     while(admin):
