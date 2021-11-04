@@ -95,12 +95,15 @@ def make_booking():
     theatres = cursor.fetchall()
 
     i=1
+    theatresnames=[]
     # Print theatres
     for theatre in theatres:
-        print("   {0}) {1}".format(i,theatre[1]))
-        i+=1
+        if theatre[1] not in theatresnames:
+            theatresnames.append(theatre[1])
+            print("   {0}) {1}".format(i,theatre[1]))
+            i+=1
         
-    if i==1:
+    if i==0:
         print("Sorry! This movie is not showing at any theatres. Booking automatically cancelled.\n")
         return
     
@@ -173,9 +176,11 @@ def make_booking():
                                "\n   Showtime: " + showtimes[showtime_number-1][1] +
                                "\n   Number of seats: " + str(number_seats) +
                                "\n   Total Price: $" + str(number_seats*showtimes[showtime_number-1][2]))
-
+    
+    
     confirmation = get_valid_option("Confirm sale (1=YES, 2=NO): ", 2)
     if confirmation==1:
+        # Update showtime to reduce number of seats available
         cursor.execute("UPDATE showtimes SET showtime_seats_left={0} WHERE showtime_id={1}".format(new_seats_left,showtime[0]))
         connection.commit()
         print("Booking confirmed.\n")
@@ -192,7 +197,7 @@ def add_movie():
     while movie_name_invalid:
         movie_name = input("Please enter movie name: ")
         # Make sure user entered valid input
-        if movie_name!='':
+        if movie_name.isspace()==False and movie_name !='':
             # SQL will fail if name already exists. Thus, use try/except to catch this
             try:
                 cursor.execute("INSERT INTO movies (movie_name) VALUES ('{}')".format(movie_name))
@@ -384,12 +389,12 @@ def admin():
     
     loggedOut=True
       
-    
+    # Log in
     while loggedOut:
         user = input("Please enter username: ")
         
         try:
-
+            # Get hashed password based on username, of if doesn't exist, try will pick it up
             hashed_pass = connection.execute("SELECT hashed_password FROM users WHERE username='{}'".format(user))
             hashed_pass = hashed_pass.fetchall()[0][0]     
             password = input("Please enter password: ")    
