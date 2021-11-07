@@ -332,6 +332,7 @@ def delete_movie():
     for movie in movies:
         print("   {0}) {1}".format(i,movie[1]))
         i+=1
+    # Get movie to delete
     movie_number = get_valid_option("Enter movie (number): ", i-1)
     movie_id = movies[movie_number-1][0]
     movie_name = movies[movie_number-1][1]
@@ -372,10 +373,11 @@ def delete_showtime():
         print("   {0}) Movie: {1} | Theatre: {2} | Time: {3} | Price: ${4} | Seats left: {5}".format(i,showtime[1],showtime[2],showtime[3],showtime[4],showtime[5]))
         i+=1
 
-    # First, get placement of movie in list
+    # Get showtime to delete
     showtime_number = get_valid_option("Enter showtime (number): ", i-1)
     showtime_id = showtimes[showtime_number-1][0]
     
+    # Delete showtime
     connection.execute("DELETE FROM showtimes WHERE showtime_id={}".format(showtime_id))
     connection.commit()
     
@@ -394,12 +396,13 @@ def admin():
         user = input("Please enter username: ")
         
         try:
-            # Get hashed password based on username, of if doesn't exist, try will pick it up
+            # Get hashed password based on username, of if doesn't exist, try/except will pick it up
             hashed_pass = connection.execute("SELECT hashed_password FROM users WHERE username='{}'".format(user))
             hashed_pass = hashed_pass.fetchall()[0][0]     
             password = input("Please enter password: ")    
             
             hashed_user_pass = hashlib.sha256(password.encode())
+            # If login successful.
             if hashed_user_pass.hexdigest()==hashed_pass:
                 loggedOut = False
             else:
