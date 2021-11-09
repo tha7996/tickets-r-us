@@ -377,11 +377,20 @@ def delete_showtime():
     showtime_number = get_valid_option("Enter showtime (number): ", i-1)
     showtime_id = showtimes[showtime_number-1][0]
     
-    # Delete showtime
-    connection.execute("DELETE FROM showtimes WHERE showtime_id={}".format(showtime_id))
-    connection.commit()
+    confirmation = get_valid_option("Confirm deletion of showtime {} (1=YES, 2=NO): ".format(showtime_number), 2)
     
-    print("Showtime deleted.")
+    if confirmation==1:
+    
+    
+        # Delete showtime
+        connection.execute("DELETE FROM showtimes WHERE showtime_id={}".format(showtime_id))
+        connection.commit()
+        print("Showtime deleted.")
+    else:
+        print("Showtime deletion cancelled.")
+        return
+    
+    
     
 
 
@@ -406,11 +415,13 @@ def admin():
             if hashed_user_pass.hexdigest()==hashed_pass:
                 loggedOut = False
             else:
-                print("Invalid credentials. Please try again.")
+                print("Invalid credentials.\n")
+                return
         
         except:      
             password = input("Please enter password: ")
-            print("Invalid credentials. Please try again.")
+            print("Invalid credentials.\n")
+            return
                 
     admin=True
     
